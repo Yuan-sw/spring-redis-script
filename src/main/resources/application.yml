@@ -1,0 +1,12 @@
+server:
+  port: 10900
+  tomcat:
+    accept-count: 500
+    uri-encoding: UTF-8
+    threads:
+      max: 500 #最大线程数
+      min-spare: 20 #最小空闲线程数
+
+spring:
+  redis:
+    host: 172.0.0.1:9876
