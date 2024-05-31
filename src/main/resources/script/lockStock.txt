@@ -1,0 +1,42 @@
+local keys = KEYS
+local args = ARGV
+-- 创建一个表保存所有的操作
+local operations = {}
+local incrValue = 0;
+-- 返回的库存信息
+local data = {}
+-- 返回结果
+local result = {}
+
+-- 遍历所有的key和对应的值减去可售库存
+for i, key in ipairs(keys) do
+    if incrValue < 0 then
+        -- 任意一个扣减后的值小于0，剩余的就不再做扣减逻辑，只get库存值
+        local currentValue = tonumber(redis.call('GET', key))
+        table.insert(data, {key, currentValue})
+    else
+        local increment = tonumber(args[i])
+        -- 执行扣减
+        local currentValue = redis.call('INCRBY', key, -increment)
+        --incrValue大于等于0的时候，每次都赋值，直到赋值到有负数
+        incrValue = currentValue
+        -- 将本次操作记录下来
+        table.insert(operations, {key, increment})
+        -- 记录一下当前key的扣减前的可售库存值
+        table.insert(data, {key, increment + tonumber(currentValue)})
+    end
+end
+result['data'] = data
+
+if incrValue < 0 then
+    -- 如果有任何一个sku扣减后库存值小于0,则回滚所有已经执行的操作
+    for _, op in ipairs(operations) do
+        redis.call('INCRBY', op[1], op[2])
+    end
+    result['success'] = false
+else
+    result['success'] = true
+end
+
+-- 所有操作都成功,返回true
+return cjson.encode(result)

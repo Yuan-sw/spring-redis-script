@@ -9,4 +9,9 @@ server:
 
 spring:
   redis:
-    host: 172.0.0.1:9876
+    host: redis-dev-master.dev-common.svc.cluster.local
+    port: 6379
+    password: q970J4RvjH
+    database: 6
+    timeout: 300000 #连接超时时间（毫秒）
+    connectTimeout: 300000 #连接超时时间（毫秒）
