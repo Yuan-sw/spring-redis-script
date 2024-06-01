@@ -1,7 +1,8 @@
 local keys = KEYS
 local args = ARGV
 -- 创建一个表保存所有的操作
-local operations = {}
+local saleStockOperations = {}
+local frozenStockOperations = {}
 local incrValue = 0;
 -- 返回的库存信息
 local data = {}
@@ -10,28 +11,55 @@ local result = {}
 
 -- 遍历所有的key和对应的值减去可售库存
 for i, key in ipairs(keys) do
+    local saleStockKey = key .. ':saleStock'
+    local frozenStockKey = key .. ':frozenStock'
+    local currentResValue = {}
+    currentResValue['key'] = key
     if incrValue < 0 then
         -- 任意一个扣减后的值小于0，剩余的就不再做扣减逻辑，只get库存值
-        local currentValue = tonumber(redis.call('GET', key))
-        table.insert(data, {key, currentValue})
+        local currentSaleValue = 0;
+        local value = redis.call('GET', saleStockKey)
+        if value then 
+            currentSaleValue = tonumber(value)
+        end
+        currentResValue['beforeChangeStock'] = currentSaleValue
+        currentResValue['changeStock'] = 0
+        currentResValue['afterChangeStock'] = currentSaleValue
+        table.insert(data, currentResValue)
     else
         local increment = tonumber(args[i])
-        -- 执行扣减
-        local currentValue = redis.call('INCRBY', key, -increment)
+        -- 执行扣减可售库存
+        local currentSaleValue = redis.call('DECRBY', saleStockKey, increment)
+        -- 执行增加冻结库存
+        local currentFrezenValue = redis.call('INCRBY', frozenStockKey, increment)
         --incrValue大于等于0的时候，每次都赋值，直到赋值到有负数
-        incrValue = currentValue
+        incrValue = currentSaleValue
         -- 将本次操作记录下来
-        table.insert(operations, {key, increment})
+        table.insert(saleStockOperations, {saleStockKey, increment})
+        table.insert(frozenStockOperations, {frozenStockKey, increment})
         -- 记录一下当前key的扣减前的可售库存值
-        table.insert(data, {key, increment + tonumber(currentValue)})
+        currentResValue['beforeChangeStock'] = increment + tonumber(currentSaleValue)
+        -- 记录一下当前操作扣改变的库存值和改编后的库存之，改编后如果是负值，就认为没有发生改变，下面的逻辑会回滚
+        if currentSaleValue >= 0 then
+            currentResValue['changeStock'] = -increment
+            currentResValue['afterChangeStock'] = currentSaleValue
+        else
+            currentResValue['changeStock'] = 0
+            currentResValue['afterChangeStock'] = increment + tonumber(currentSaleValue)
+        end
+        table.insert(data, currentResValue)
     end
 end
 result['data'] = data
 
 if incrValue < 0 then
-    -- 如果有任何一个sku扣减后库存值小于0,则回滚所有已经执行的操作
-    for _, op in ipairs(operations) do
+    -- 如果有任何一个sku扣减后库存值小于0,则回滚所有已经扣减过的可售库存
+    for _, op in ipairs(saleStockOperations) do
         redis.call('INCRBY', op[1], op[2])
+    end
+    -- 回滚所有加上来的冻结库存
+    for _, op in ipairs(frozenStockOperations) do
+       redis.call('DECRBY', op[1], op[2])
     end
     result['success'] = false
 else

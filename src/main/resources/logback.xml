@@ -3,7 +3,7 @@
     <contextName>logback</contextName>
     <springProperty scope="local" name="SERVER_NAME" source="spring.application.name" />
     <springProperty scope="local" name="SERVER_PORT" source="server.port" />
-    <property name="LOG_PATH" value="/opt/java_app/logs/${SERVER_NAME}/"/>
+    <property name="LOG_PATH" value="/Users/ysw/Documents/java_app/logs/${SERVER_NAME}/"/>
     <property name="LOG_FILE" value="${SERVER_NAME}.log"/>
     <conversionRule conversionWord="SERVER_IP" converterClass="com.script.config.LogIpConfig" />
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} ${SERVER_NAME}:[%SERVER_IP:${SERVER_PORT}] %-5level %tid %t %logger{36} [%method,%line]: %msg%n" />

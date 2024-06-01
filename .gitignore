@@ -46,3 +46,8 @@ nbdist/
 !*/build/*.xml
 
 .flattened-pom.xml
+
+# vscode
+.DS_Store
+launch.json
+settings.json
