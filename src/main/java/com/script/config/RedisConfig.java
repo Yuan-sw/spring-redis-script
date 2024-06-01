@@ -1,13 +1,16 @@
 package com.script.config;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
@@ -15,12 +18,20 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.util.FileCopyUtils;
 
-import java.time.Duration;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.script.constant.ScriptConstant;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Configuration
-public class RedisConfig
-{
+public class RedisConfig implements CommandLineRunner {
 
     @Value("${spring.redis.host}")
     private String host;
@@ -38,9 +49,8 @@ public class RedisConfig
     private int timeout;
 
     @Bean(name = "redisTemplate")
-    @SuppressWarnings(value = {"unchecked", "rawtypes"})
-    public RedisTemplate<Object, Object> redisTemplate()
-    {
+    @SuppressWarnings(value = { "unchecked", "rawtypes" })
+    public RedisTemplate<Object, Object> redisTemplate() {
         RedisTemplate<Object, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(getFactory(db));
 
@@ -48,7 +58,8 @@ public class RedisConfig
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        mapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        mapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY);
         serializer.setObjectMapper(mapper);
 
         // 使用StringRedisSerializer来序列化和反序列化redis的key值
@@ -63,8 +74,7 @@ public class RedisConfig
         return template;
     }
 
-    private RedisConnectionFactory getFactory(int database)
-    {
+    private RedisConnectionFactory getFactory(int database) {
         // 构建工厂对象
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
         config.setHostName(host);
@@ -79,5 +89,17 @@ public class RedisConfig
         // 重新初始化工厂
         factory.afterPropertiesSet();
         return factory;
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        try {
+            log.info("项目启动加载lua脚本文件");
+            ClassPathResource resource = new ClassPathResource("script\\frozenStockScript.txt");
+            Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
+            ScriptConstant.FROZEN_STOCK_SCRIPT = FileCopyUtils.copyToString(reader);
+        } catch (IOException e) {
+            log.error("项目启动时加载lua脚本文件失败:{}", e);
+        }
     }
 }
