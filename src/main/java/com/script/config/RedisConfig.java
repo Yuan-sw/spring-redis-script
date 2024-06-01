@@ -93,13 +93,29 @@ public class RedisConfig implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        ClassPathResource resource = null;
+        Reader reader = null;
         try {
             log.info("项目启动加载lua脚本文件");
-            ClassPathResource resource = new ClassPathResource("script\\frozenStockScript.txt");
-            Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
+            resource = new ClassPathResource("script\\frozenStockScript.txt");
+            reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
             ScriptConstant.FROZEN_STOCK_SCRIPT = FileCopyUtils.copyToString(reader);
+            reader.close();
+
+            resource = new ClassPathResource("script\\cleanFrozenStockScript.txt");
+            reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
+            ScriptConstant.CLEAN_FROZEN_STOCK_SCRIPT = FileCopyUtils.copyToString(reader);
+            reader.close();
+
+            resource = new ClassPathResource("script\\addSaleStockScript.txt");
+            reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
+            ScriptConstant.ADD_SALE_STOCK_SCRIPT = FileCopyUtils.copyToString(reader);
         } catch (IOException e) {
             log.error("项目启动时加载lua脚本文件失败:{}", e);
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
         }
     }
 }

@@ -2,16 +2,12 @@ package com.script.controller;
 
 import javax.annotation.Resource;
 
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.script.constant.ScriptConstant;
 import com.script.domain.dto.CreateOrderDTO;
 import com.script.domain.vo.R;
 import com.script.service.StockOperateService;
@@ -23,22 +19,60 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/test")
 public class TestController {
 
-    @Resource(name = "completeThreadExecutor")
-    private ThreadPoolTaskExecutor executor;
-    @Resource(name = "redisTemplate")
-    private RedisTemplate redisTemplate;
     @Resource
-    private StockOperateService StockOperateService;
+    private StockOperateService stockOperateService;
 
-    @GetMapping("/list")
-    public void findOrderList() {
+    @GetMapping("/log")
+    public void log() {
         log.info("======接口请求======");
-        Object object = redisTemplate.opsForValue().get("cop:shop:sku:stock:1");
+        stockOperateService.logTransfer();
     }
 
+    /**
+     * 正常下单锁定库存
+     * 
+     * @param dto
+     * @return
+     */
     @PostMapping("/frozenStock")
     public R frozenStock(@RequestBody CreateOrderDTO dto) {
-        StockOperateService.frozenStock(dto);
+        stockOperateService.frozenStock(dto);
+        return R.ok();
+    }
+
+    /**
+     * 模拟下单锁定库存成功，后续逻辑异常，执行冻结库存释放逻辑
+     * 
+     * @param dto
+     * @return
+     */
+    @PostMapping("/releaseFrozenStock")
+    public R releaseFrozenStock(@RequestBody CreateOrderDTO dto) {
+        stockOperateService.releaseFrozenStock(dto);
+        return R.ok();
+    }
+
+    /**
+     * 支付成功后清理冻结库存
+     * 
+     * @param dto
+     * @return
+     */
+    @PostMapping("/cleanFrozenStock")
+    public R cleanFrozenStock(@RequestBody CreateOrderDTO dto) {
+        stockOperateService.cleanFrozenStock(dto);
+        return R.ok();
+    }
+
+    /**
+     * 售后退款后加回可售库存/后台操作增加可售库存
+     * 
+     * @param dto
+     * @return
+     */
+    @PostMapping("/addSaleStock")
+    public R addSaleStock(@RequestBody CreateOrderDTO dto) {
+        stockOperateService.addSaleStock(dto);
         return R.ok();
     }
 }

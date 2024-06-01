@@ -1,0 +1,27 @@
+local keys = KEYS
+local args = ARGV
+
+-- 返回的库存信息
+local data = {}
+-- 返回结果
+local result = {}
+
+-- 遍历所有的key和对应的值减去冻结库存，冻结库存的扣减不考虑负数
+for i, key in ipairs(keys) do
+    local saleStockKey = key .. ':saleStock'
+    local increment = tonumber(args[i])
+    local currentResValue = {}
+    -- 执行增加可售库存
+    local currentSaleValue = redis.call('INCRBY', saleStockKey, increment)
+
+    currentResValue['beforeChangeSaleStock'] = tonumber(currentSaleValue) + increment
+    currentResValue['changeSaleStock'] = increment
+    currentResValue['afterChangeSaleStock'] = currentSaleValue
+    table.insert(data, currentResValue)
+end
+
+result['data'] = data
+result['success'] = true
+
+-- 所有操作都成功,返回true
+return cjson.encode(result)
