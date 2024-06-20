@@ -75,6 +75,7 @@ https://repo.maven.apache.org/maven2: Remote host terminated the handshake)~~>--
 
 
     <build>
+        <finalName>${project.artifactId}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
