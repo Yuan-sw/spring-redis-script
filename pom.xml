@@ -26,7 +26,8 @@
 
     <dependencies>
         <!--~~(org.springframework.boot:spring-boot-starter-web failed. Unable to download metadata. Tried repositories:
-https://repo.maven.apache.org/maven2: Remote host terminated the handshake)~~>--><dependency>
+https://repo.maven.apache.org/maven2: Remote host terminated the handshake)~~>-->
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
@@ -75,6 +76,7 @@ https://repo.maven.apache.org/maven2: Remote host terminated the handshake)~~>--
 
 
     <build>
+        <finalName>${project.artifactId}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
